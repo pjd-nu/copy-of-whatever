@@ -73,13 +73,29 @@ smartphones; they use disk (or flash) storage as a persistent cache for
 retrieved objects for possible re-use, greatly speeding up the loading of some
 webpages.  An average web page contains about 50
 resources~\cite{google-web-metrics}, therefore, even moderate browsing activity
-results in large amounts of storage I/O. 
+results in large numbers of individual read and write operations.
+
+Browser caches present an unusually write-heavy workload, as typical
+hit rates for an individual cache are below 50\%---i.e. for
+every hit which results in a read from the cache, there is at least one
+miss resulting in a write. Thus even though cache writes are
 
 Although browser caches provide significant performance improvements by caching
-certain commonly-used web page elements, a large fraction of objects are either
+commonly-used web page elements, typical hit rates are below 50\%, as
+a large fraction of objects are either unique or expire before their
+next access. This results 
+
+ large fraction of objects are either
 explicitly non-cacheable or are unique, resulting in hit rates of below 50\% for
-typical workloads. Caches of modern browsers like Chromium~\cite{chromium} or
-Firefox~\cite{Firefox} employ LRU or LFU eviction to to maximize hit rate
+typical workloads.
+
+Caches of modern browsers like Chromium~\cite{chromium} or
+Firefox~\cite{Firefox} employ LRU or LFU eviction to maximize hit
+rate. However a large fraction of objects retrieved are unique or are
+marked to prevent caching, resulting in best-case hit rates of below
+50\% for typical workloads. 
+This results in a high rate of writes to storage, as 
+
 %, resulting in
 %highly non-sequential write patterns as small objects are evicted from the cache
 %and their space re-used. 

@@ -20,11 +20,11 @@ set label 2 'Max Read 10.33ms' at 0.7,7.3
 set arrow 1 from 0.9,7.6 to 0.92,9.9
 
 plot 'plot-input.dat' \
-        index 11 using ($1/10):2 title 'write - long' with linespoints lt 1ps 2 lw 4, \
-     '' index 10 using ($1/10):2 title ' med.' with linespoints lt 1 ps 2 lw 4, \
-     '' index 9 using ($1/10):2 title ' short' with linespoints lt 1 ps 2 lw 4, \
+        index 11 title 'write - long' with linespoints lt 1ps 2 lw 4, \
+     '' index 10 title ' med.' with linespoints lt 1 ps 2 lw 4, \
+     '' index 9 title ' short' with linespoints lt 1 ps 2 lw 4, \
      \
-     '' index 8 using ($1/10):2 title 'read - long' with linespoints lt 2 ps 2 lw 4, \
-     '' index 7 using ($1/10):2 title ' med.' with linespoints lt 2 ps 2 lw 4, \
-     '' index 6 using ($1/10):2 title ' short' with linespoints lt 2 ps 2 lw 4
+     '' index 8 title 'read - long' with linespoints lt 2 ps 2 lw 4, \
+     '' index 7 title ' med.' with linespoints lt 2 ps 2 lw 4, \
+     '' index 6 title ' short' with linespoints lt 2 ps 2 lw 4
 
