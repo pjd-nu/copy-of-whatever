@@ -71,57 +71,48 @@ One such complex application is a web browser.  Browsers are by far the most
 commonly-used application on desktops, and are becoming so on tablets and
 smartphones; they use disk (or flash) storage as a persistent cache for
 retrieved objects for possible re-use, greatly speeding up the loading of some
-webpages.  An average web page contains about 50
+web pages.  An average web page contains about 50
 resources~\cite{google-web-metrics}, therefore, even moderate browsing activity
 results in large numbers of individual read and write operations.
 
 Browser caches present an unusually write-heavy workload, as typical
 hit rates for an individual cache are below 50\%---i.e. for
 every hit which results in a read from the cache, there is at least one
-miss resulting in a write. Thus even though cache writes are
+miss, resulting in a write. As long as write performance is high enough
+this need not impact performance, as writes may be performed in
+the background while a newly-fetched object is being displayed;
+however overall performance will suffer if cache writes become a
+bottleneck. 
 
-Although browser caches provide significant performance improvements by caching
-commonly-used web page elements, typical hit rates are below 50\%, as
-a large fraction of objects are either unique or expire before their
-next access. This results 
+Modern browsers like Chromium~\cite{chromium} or
+Firefox~\cite{Firefox} employ LRU or LFU eviction in their caches to
+maximize hit rate. This results in highly random write patterns;
+although the operating system may be able to coalesce some of these
+writes, the resulting write pattern is still very non-sequential,
+resulting in poor file system performance on  eMMC-equipped mobile
+devices we have tested. Not only are writes very slow under these
+conditions, but the lack of command queuing on the underlying flash
+storage results in high read latency due to interference from writes.
 
- large fraction of objects are either
-explicitly non-cacheable or are unique, resulting in hit rates of below 50\% for
-typical workloads.
-
-Caches of modern browsers like Chromium~\cite{chromium} or
-Firefox~\cite{Firefox} employ LRU or LFU eviction to maximize hit
-rate. However a large fraction of objects retrieved are unique or are
-marked to prevent caching, resulting in best-case hit rates of below
-50\% for typical workloads. 
-This results in a high rate of writes to storage, as 
-
-%, resulting in
-%highly non-sequential write patterns as small objects are evicted from the cache
-%and their space re-used. 
-
-When paired with a storage system with very poor random write performance,
-however, this hit rate may come at the expense of slower cache operations.
-Performing in-place LFU, as is done in Chromium for instance, results in many
-random writes with correspondingly poor file system performance on mobile
-devices which we have tested. The eMMC storage on these devices lacks command
-queuing, and therefore slow writes block reads; thus, although writes may be
-performed asynchronously in the background, they still can adversely affect user
-performance.
+Under these circumstances, the cache resulting in optimal application
+performance may not be the same as the one resulting in optimal hit
+rate. In fact we argue that this trade-off is fundamental: any
+eviction algorithm based purely on attributes of the cached objects
+(e.g. LRU) is going to generate highly non-sequential writes when
+operating with an entirely full cache, and (under reasonable
+assumptions) any mechanism to reduce this randomness will require
+reducing the effective cache size, thus reducing the expected hit rate.
 
 We present an implementation and analysis of a cache designed to maximize write
 throughput to flash storage, at the cost of a small decrease in hit rate. The
 cache is structured much like a log-structured file system~\cite{rosenblum92},
-dividing storage into large \emph{segments} which are written sequentially.
-Once filled, a segment is immutable and cannot be reused until it is
-\emph{cleaned} of any remaining valid data. Although segment cleaning in a
-log-structured file system is complex and often time-consuming, in a cache it
-may be performed simply by evicting any remaining data in a segment selected for
-cleaning.  Also, unlike log-structured file system, we do not buffer segments in
-memory until they are full, but rather write data as it becomes available in
-order to reduce the memory footprint.  Finally, due to sequential nature of
-write traffic, write amplification is minimized, resulting in optimal wear
-leveling.
+dividing storage into large \emph{segments} which are written
+sequentially, relying on the file system to buffer data and perform
+large sequential writes. 
+Once filled, segments are immutable and cannot be reused until they are
+\emph{cleaned}; cache eviction occurs as part of this cleaning
+process, and results in much higher cleaning performance than is
+typical in log-structured file systems.
 
 The contributions described in this paper are as follows:
 
@@ -140,16 +131,18 @@ The contributions described in this paper are as follows:
 
 \end{itemize}
 
-\section{Overview}
+\section{Overview and Rationale}
 Although today's smart phones run general purpose operating systems on CPUs as
 powerful as desktop machines of several years ago, storage systems on these
 devices are far less powerful than those found on typical desktops or laptops.
 Almost all Android devices on the market appear to use eMMC~\cite{emmc_2010}
 storage, essentially a soldered down version of ubiquitous MicroSD card.  Where
-desktop and laptop SSDs use 32-bit microcontrollers with megabytes of memory to
+desktop and laptop SSDs use 32-bit micro-controllers with megabytes of memory to
 run the algorithms which translate operating system requests to flash
 operations, these low-end devices may rely on a 8-bit microcontroller with less
 than 10\,KiB of RAM.
+
+\subsection{Mobile storage performance}
 
 As an example, in Figure~\ref{fig:galaxy-nexus-seq} we see sequential read and
 write throughput for direct I/O (i.e. un-cached) requests to a 16\,MiB file on a
@@ -174,6 +167,7 @@ algorithms used on controllers with limited memory~\cite{Kim2002:FTL}, which
 with modern flash chips may suffer 128 times or worse decrease in throughput for
 random writes~\cite{boboila_performance_2011}.
 
+\subsection{Log-structured cache}
 As can be seen in the Figure~\ref{fig:galaxy-nexus-seq}, to achieve the best
 write performance with these devices, large contiguous writes must be used.
 This is similar to one of the constraints that shaped the design of the
@@ -182,8 +176,8 @@ I/O is much faster than random I/O on modern disks due to seek overhead and
 argued that read performance would decrease in importance with growing memory
 sizes as more read requests would be served from memory.  In the case of flash,
 we note that the read performance is inherently faster than write and does not
-degrade with random I/O, and large sequential writes are needed to achieve high
-performance.
+degrade with random I/O, and large sequential operations are needed to
+achieve high write performance.
 
 Log-structured file system divides the storage into large fixed sized segments,
 only one of which (the \emph{write frontier}) is written to at a time.  Writes
@@ -202,13 +196,80 @@ performance degradation under certain scenarios~\cite{seltzer93}.
 
 The design of our cache is similar to the design of the log-structured file
 system.  A large preallocated file is used instead of a block device and is
-divided into fixed sized segments.  Cached objects are written to the segment
-which happens to be the write frontier and once the segment is full, a new
-segment is chosen as the write frontier.  We manage to avoid the problem of
-segment cleaning by choosing to evict entries that live in the segment that we
-chose to clean.  In addition, due to memory constraints on mobile devices, the
-segments are not buffered in memory; data is written to segment as it becomes
-available.
+divided into fixed sized segments, which are written sequentially. The
+cleaning process is simplified substantially, however, by taking
+advantage of the volatile nature of cached data. Segments are selected
+for cleaning in FIFO order, and within each segment we track which
+objects have been used since the segment was written. Those objects
+are copied back to the write frontier, much as pages with the A bit
+set are skipped in the CLOCK replacement algorithm \cite{clock}.
+
+\subsection{Hit rate vs. sequentiality trade-offs}
+
+Our log-structured cache performs purely sequential writes, but at the
+cost of a hit rate that is slightly lower than that of LRU or the
+existing Chrome browser cache. We present an informal argument that
+LRU and similar algorithms when using demand eviction will generate
+writes which are randomly and uniformly distributed across the storage
+space, and that any modification which increases the sequentiality of
+these writes will necessarily involve some decrease in hit rate.
+
+We assume a cache holding S objects, where a new object is inserted by
+choosing the least-recently-used object and over-writing it. In the
+steady state there will be no correlation between the location of
+an item in storage and its most recent use time; the resulting writes
+will thus be uniformly distributed over the S storage locations.
+In this situation it is unlikely that buffering in the file system
+will do much to increase sequentiality of write operations.
+If $M$ objects are buffered in memory before writing, $M<S$,
+then the probability that an individual write cannot be merged with
+the following one is $\frac{S-M}{S}$, and the mean write length will
+be $\frac{S}{S-M}$; i.e. less than 2 for $M<\frac{S}{2}$.
+
+To increase write sequentiality it is necessary that
+there be a choice of locations into which a new object will be
+written. This may be done in one of two ways: (a) a different object
+may be chosen for eviction, or (b) multiple free locations may be
+maintained.
+
+Option (a) results in eviction of an object other than that identified
+as the best candidate for eviction; since this is done based on
+information unrelated to the request stream, its effect on hit rate
+should be negative for any replacement strategy better than random.
+
+For alternative (b), assume we reserve $k$ locations, either
+permanently or on average via a high/low-water mark method of
+eviction, resulting in a cache which holds $S'=S-k$ objects. Since hit
+rate is a non-decreasing function of $S$ for stack algorithms such as
+LRU, and expected hit rate is an increasing function of cache size for
+any useful replacement algorithm, the result is a decrease in hit rate
+when compared to the original cache holding $S$ objects. 
+
+\begin{figure}
+\centering
+\includegraphics[width=\columnwidth]{graphs/re-write}
+\caption{Writing new entries to cache, without and with compaction.}
+\label{fig:rewrite}
+\end{figure}
+
+If some number of free locations are reserved, write sequentiality may
+be further increased by performing a larger number of writes. In
+Figure \ref{fig:rewrite}(a) we see a section of cache with free and in-use
+locations; if the free locations are written directly, as shown in
+Figure \ref{fig:rewrite}(b), the result is four individual writes.
+However if we compact storage by reading and re-writing in-use data,
+in Figure \ref{fix:rewrite}, the total volume of data written increases, but
+it may be written by a single sequential operation.
+
+In our log-structured cache we take advantage of both additional free
+space, of up to an entire segment, as well as additional writes for
+copying recently-used objects during cleaning. The result is an
+algorithm which generates fully sequential writes, while achieving hit
+rates nearly as high as those for a widely-used LRU-like algorithm
+(the existing Chrome cache) at the cost of a very small increase in write
+traffic. (Due to the elimination of internal write amplification from
+random writes, wear on the flash device is still expected to be much
+lower than for the original cache algorithm.)
 
 \section{Log-Structured Cache Design}
 
@@ -459,7 +520,7 @@ a worst case of 28 and 10ms.
 
 \begin{figure}[t]
   \begin{center}
-    \includegraphics[width=1.04\columnwidth]{graphs/disk-perf}
+    \includegraphics[width=1.04\columnwidth]{data/disk-perf}
   \end{center}
   \caption{ReadData and WriteData latency percentiles for the existing cache.}
   \label{fig:disk-perf} 
@@ -468,7 +529,7 @@ a worst case of 28 and 10ms.
 
 \begin{figure}[t]
   \begin{center}
-    \includegraphics[width=1.04\columnwidth]{graphs/flash-perf}
+    \includegraphics[width=1.04\columnwidth]{data/flash-perf}
   \end{center}
   \caption{ReadData and WriteData latency percentiles for the log-structured
     cache.}
