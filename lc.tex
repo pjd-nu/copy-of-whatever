@@ -346,7 +346,7 @@ sequential block allocation.
 
 \begin{figure}[t]
   \begin{center}
-    \includegraphics[width=1.04\columnwidth]{graphs/storage}
+    \includegraphics[width=\columnwidth]{graphs/storage}
   \end{center}
   \caption{Log-structured cache view of the storage.}
   \label{fig:storage} 
@@ -372,7 +372,7 @@ current cache does.  The segment summary is sized assuming a mean entry size of
 
 \begin{figure}[t]
   \begin{center}
-    \includegraphics[width=1.04\columnwidth]{graphs/segment}
+    \includegraphics[width=\columnwidth]{graphs/segment}
   \end{center}
   \caption{Contents of a Segment.}
   \label{fig:segment} 
@@ -572,6 +572,14 @@ increase of 3\% in the miss rate, from 65\% to 68\%.
     policy.}
   \label{fig:hit-rate} 
 \vspace{-0.2in}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=1.05\columnwidth]{graphs/hit-rate}
+\caption{Hit rate for the \emph{log-structured cache} with retention
+  of recently-used objects during cleaning.}
+\label{fig:hit-rate2}
 \end{figure}
 
 \subsection{Quantifying the Impact}
