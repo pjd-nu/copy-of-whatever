@@ -5,19 +5,19 @@
 #     6-8   flash read  bin1/bin2/bin3
 #     9-11  flash write bin1/bin2/bin3
 
-set terminal postscript eps enhanced size 5,3 font "Times-Roman" 22
+set terminal postscript eps color enhanced size 5,3.5 font "Times-Roman" 22
 set output 'disk-perf.eps'
 
-set xlabel 'Percentile'
+set xlabel 'Cumulative fraction'
 set ylabel 'Latency (ms)'
-set key at 1.09,4.5 Right
+set key at 0.8,9.5 Right maxrows 3 width -5 samplen 3
 
-set xrange [0.4:1.08]
+set xrange [0.38:1.06]
 set yrange [0:10]
 
-set label 1 'Max Write 470ms' at 0.8,9 right
-set label 2 'Max Read 3351ms' at 0.8,8.2 right
-set arrow 1 from 0.81,9.0 to 0.86,9.9
+set label 1 'Max Write 470ms' at 1.03,2 right
+set label 2 'Max Read 3351ms' at 1.03,1.5 right
+set arrow 1 from 0.98,2.3 to 0.98,9.9
 
 plot 'plot-input.dat' \
         index 5 title 'write - long' with linespoints lt 1 lw 4 ps 2, \

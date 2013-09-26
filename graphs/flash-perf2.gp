@@ -5,14 +5,14 @@
 #     6-8   flash read  bin1/bin2/bin3
 #     9-11  flash write bin1/bin2/bin3
 
-set terminal postscript eps enhanced size 5,3 font "Times-Roman" 22
+set terminal postscript eps color enhanced size 5,3.5 font "Times-Roman" 22
 set output 'flash-perf.eps'
 
-set xlabel 'Percentile'
+set xlabel 'Cumulative fraction'
 set ylabel 'Latency (ms)'
 set key at 0.65,9.5 Right
 
-set xrange [0.4:1.08]
+set xrange [0.38:1.06]
 set yrange [0:10]
 
 set label 1 'Max Write 28.4ms' at 0.7,8
