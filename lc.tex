@@ -258,7 +258,7 @@ Figure \ref{fig:rewrite}(a) we see a section of cache with free and in-use
 locations; if the free locations are written directly, as shown in
 Figure \ref{fig:rewrite}(b), the result is four individual writes.
 However if we compact storage by reading and re-writing in-use data,
-in Figure \ref{fix:rewrite}, the total volume of data written increases, but
+in Figure \ref{fig:rewrite}, the total volume of data written increases, but
 it may be written by a single sequential operation.
 
 In our log-structured cache we take advantage of both additional free
