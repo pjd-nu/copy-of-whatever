@@ -122,21 +122,22 @@ The contributions described in this paper are as follows:
     for write performance on low-end flash media.
 
   \item We present experimental results showing a nearly ten-fold improvement in
-    read and write latency for cache operations.
+    read and write latency for cache operations on a mobile platform when
+    compared to the existing Chromium cache.
 
   \item Using real browsing traces collected over a period of two months, we
-    compare our cache with simple FIFO eviction to the existing cache.  The
-    worst case reduction in hit rate is no more than 3\% (35\% to 32\%) across
-    the traces and cache sizes we evaluated.
+    compare our cache to the existing cache.  The
+    reduction in hit rate is no more than 1\% (37.9\% to 36.9\%) across
+    the traces and cache sizes evaluated, and typically between 0 and 0.5\%.
 
 \end{itemize}
 
 \section{Overview and Rationale}
 Although today's smart phones run general purpose operating systems on CPUs as
 powerful as desktop machines of several years ago, storage systems on these
-devices are far less powerful than those found on typical desktops or laptops.
+devices are far less powerful than those on typical desktops or laptops.
 Almost all Android devices on the market appear to use eMMC~\cite{emmc_2010}
-storage, essentially a soldered down version of ubiquitous MicroSD card.  Where
+storage, essentially a soldered-down version of a MicroSD card.  Where
 desktop and laptop SSDs use 32-bit micro-controllers with megabytes of memory to
 run the algorithms which translate operating system requests to flash
 operations, these low-end devices may rely on a 8-bit microcontroller with less
@@ -168,30 +169,27 @@ with modern flash chips may suffer 128 times or worse decrease in throughput for
 random writes~\cite{boboila_performance_2011}.
 
 \subsection{Log-structured cache}
-As can be seen in the Figure~\ref{fig:galaxy-nexus-seq}, to achieve the best
-write performance with these devices, large contiguous writes must be used.
-This is similar to one of the constraints that shaped the design of the
-Log-Structured File System.  Rosenblum and Ousterhout observed that sequential
-I/O is much faster than random I/O on modern disks due to seek overhead and
-argued that read performance would decrease in importance with growing memory
-sizes as more read requests would be served from memory.  In the case of flash,
-we note that the read performance is inherently faster than write and does not
-degrade with random I/O, and large sequential operations are needed to
-achieve high write performance.
+As can be seen in the Figure~\ref{fig:galaxy-nexus-seq}, read performance on
+these devices is fairly high --- even for reads as small as 4KB --- while large
+sequential writes must be used to achieve high write performance.
+The combination of these storage characteristics and the write-heavy load
+offered by a low hit-rate cache suggests the use of a log-structured,
+write-optimized approach to cache storage similar to Rosenblum and Ousterhout's
+Log-structured File System~\cite{rosenblum92}.
 
-Log-structured file system divides the storage into large fixed sized segments,
+Log-structured file systems divide the storage into large fixed sized segments,
 only one of which (the \emph{write frontier}) is written to at a time.  Writes
 are buffered in memory until a full segment can be written to disk.  Updates to
 existing data are written to the write frontier and cause the overwritten data
 (living in some previous segment) to become obsolete.  When the number of free
 segments drops below a certain threshold, a cleaning process chooses segments to
 be compacted.  Any remaining live data from these segments is copied to the
-write frontier making these segments available for reuse.
+write frontier, making these segments available for reuse.
 
 This process of compacting live data in a log-structured file system is known as
 ~\emph{segment cleaning}.  Finding an efficient segment cleaning algorithm has
 been the most challenging part of the log-structured file systems.  Much
-research has been devoted to it with the best implementations causing serious
+research has been devoted to it, with the best implementations still suffering serious
 performance degradation under certain scenarios~\cite{seltzer93}.
 
 The design of our cache is similar to the design of the log-structured file
@@ -457,6 +455,25 @@ reuse.  Once the number of \emph{free} segments drops below a low watermark, a
 cleaning process starts and frees segments until their number reach a high
 watermark.
 
+\begin{figure}[t]
+  \begin{center}
+    \includegraphics[width=1.04\columnwidth]{graphs/log-size-dist}
+  \end{center}
+  \caption{Log graph of object sizes in collected user traces.}
+  \label{fig:log-size-dist} 
+\vspace{-0.2in}
+\end{figure}
+
+
+\begin{figure}
+  \begin{center}
+    \includegraphics[width=\columnwidth]{graphs/trace}
+  \end{center}
+  \caption{Sample from a trace.}
+  \label{fig:trace}
+\vspace{-0.2in}
+\end{figure}
+
 \subsubsection{Cleaning a Segment}
 Segments are chosen for cleaning in FIFO order, skipping any segments with
 entries open for reading. Cleaning is done by reading the segment summary,
@@ -467,15 +484,6 @@ required; if the index still points to this entry then it is active, and must be
 evicted by removing its pointer from the index.
 
 \section{Evaluation}
-
-\begin{figure}[t]
-  \begin{center}
-    \includegraphics[width=1.04\columnwidth]{graphs/log-size-dist}
-  \end{center}
-  \caption{Log graph of object sizes in collected user traces.}
-  \label{fig:log-size-dist} 
-\vspace{-0.2in}
-\end{figure}
 
 We implemented the log-structured cache for Chromium on Nexus 7, running Android
 Jelly Bean 4.2.2 based on 3.4.x Linux kernel with ext4 file system.  In order to
@@ -490,16 +498,26 @@ Chromium not being completely open source on Android), and thus will differ from
 mobile browser traces. In particular we expect the mean number of objects per
 page to be fewer and the sizes of objects to be smaller.
 
-\begin{figure}[t]
+\subsection{Storage Performance}
+
+\begin{figure}
   \begin{center}
-    \includegraphics[width=1.04\columnwidth]{graphs/trace}
+    \includegraphics[width=1.04\columnwidth]{graphs/disk-perf}
   \end{center}
-  \caption{Sample from a trace.}
-  \label{fig:trace}
+  \caption{ReadData and WriteData latency percentiles for the existing cache.}
+  \label{fig:disk-perf} 
 \vspace{-0.2in}
 \end{figure}
 
-\subsection{Storage Performance}
+\begin{figure}
+  \begin{center}
+    \includegraphics[width=1.04\columnwidth]{graphs/flash-perf}
+  \end{center}
+  \caption{ReadData and WriteData latency percentiles for the log-structured
+    cache.}
+  \label{fig:flash-perf} 
+\vspace{-0.2in}
+\end{figure}
 
 A test driver was used to replay and measure the latency of the operations. To
 help ensure accurate reproduction of the application behavior, we preserved
@@ -518,23 +536,33 @@ Figure~\ref{fig:flash-perf} shows the corresponding data for the
 \emph{ReadData} and \emph{WriteData} latencies are less than a millisecond, with
 a worst case of 28 and 10ms.
 
-\begin{figure}[t]
-  \begin{center}
-    \includegraphics[width=1.04\columnwidth]{data/disk-perf}
-  \end{center}
-  \caption{ReadData and WriteData latency percentiles for the existing cache.}
-  \label{fig:disk-perf} 
-\vspace{-0.2in}
-\end{figure}
+\begin{table}
+\begin{tabular}{cc}
+this & is \\
+\hline
+a table & of cases where we skip \\
+a segment & because an object \\
+is open for & reading 
+\end{tabular}
+\caption{Cleaning / object read collisions. A segment is skipped by the cleaner
+  when an object in that segment is currently open for reading.}
+\label{tab:skips}
+\end{table}
+
+
 
 \begin{figure}[t]
-  \begin{center}
-    \includegraphics[width=1.04\columnwidth]{data/flash-perf}
-  \end{center}
-  \caption{ReadData and WriteData latency percentiles for the log-structured
-    cache.}
-  \label{fig:flash-perf} 
-\vspace{-0.2in}
+\centering
+\includegraphics[width=0.8\columnwidth]{graphs/disk.png}
+\caption{Block device access trace, original cache}
+\label{fig:blktrace:disk}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.8\columnwidth]{graphs/flash.png}
+\caption{Block device access trace, log-structured cache}
+\label{fig:blktrace:flash}
 \end{figure}
 
 \subsection{Hit Rate}
@@ -576,7 +604,7 @@ increase of 3\% in the miss rate, from 65\% to 68\%.
 
 \begin{figure}
 \centering
-\includegraphics[width=1.05\columnwidth]{graphs/hit-rate}
+\includegraphics[width=1.05\columnwidth]{graphs/hit-rate-3}
 \caption{Hit rate for the \emph{log-structured cache} with retention
   of recently-used objects during cleaning.}
 \label{fig:hit-rate2}
