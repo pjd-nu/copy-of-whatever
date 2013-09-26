@@ -586,10 +586,7 @@ Due to maximum size limitation of 2\,GiB on the current Chromium cache, traces
 were trimmed to ensure they did not exceed this size before further experiments
 were performed.  In Figure~\ref{fig:hit-rate} we see the hit rate results for
 the infinite cache case as well as the cache sizes ranging from 1\,GiB to
-64\,MiB for both the original and the log-structured cache.\footnote{We note
-  that Chromium's current cache algorithm uses absolute age as one of its
-  criteria for eviction. Tests such as ours which replay weeks worth of activity
-  over a short period will not see the age-based aspects of this algorithm.}
+64\,MiB for both the original and the log-structured cache.
 The impact on the hit rate is seen to be modest; in the worst case there is an
 increase of 3\% in the miss rate, from 65\% to 68\%.
 
