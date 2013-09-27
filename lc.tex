@@ -1,5 +1,8 @@
 \documentclass[letterpaper,twocolumn,10pt]{article}
 \usepackage{usenix,epsfig,url}
+\usepackage{graphicx}
+\usepackage{multirow}
+\usepackage{rotating}
 \usepackage[font={small,it}]{caption}
 \usepackage{url} 
 \urlstyle{sf}
@@ -158,6 +161,14 @@ drastically for write sizes less than 64\,KiB.
   \end{center}
   \caption{Sequential I/O throughput of the eMMC found on Nexus 7.}
   \label{fig:seq-throughput}
+\end{figure}
+
+\begin{figure}[t]
+  \begin{center}
+    \includegraphics[width=1.04\columnwidth]{graphs/rnd-throughput}
+  \end{center}
+  \caption{Random I/O throughput of the eMMC found on Nexus 7.}
+  \label{fig:rnd-throughput}
 \end{figure}
 
 This performance for sequential I/O is comparable to what was observed in the
@@ -537,20 +548,22 @@ Figure~\ref{fig:flash-perf} shows the corresponding data for the
 \emph{ReadData} and \emph{WriteData} latencies are less than a millisecond, with
 a worst case of 28 and 10ms.
 
-\begin{table}
-\begin{tabular}{cc}
-this & is \\
-\hline
-a table & of cases where we skip \\
-a segment & because an object \\
-is open for & reading 
+\begin{table}[h]
+{\footnotesize
+\begin{tabular}{llrrrr}
+\cline{2-6}
+ &  & \multicolumn{4}{c}{Cache Size}                                                                                     \\ \cline{2-6} 
+ &        & \multicolumn{1}{l}{1024 MB} & \multicolumn{1}{l}{512 MB} & \multicolumn{1}{l}{256 MB} & \multicolumn{1}{l}{128 MB} \\
+ & Trace 1      & 1                           & 0                          & 0                          & 1                          \\
+ & Trace 2      & 0                           & 0                          & 1                          & 1                          \\
+ & Trace 3      & 0                           & 1                          & 0                          & 1                          \\ \cline{2-6} 
 \end{tabular}
+}
+\label{table:collision}
 \caption{Cleaning / object read collisions. A segment is skipped by the cleaner
   when an object in that segment is currently open for reading.}
 \label{tab:skips}
 \end{table}
-
-
 
 \begin{figure}[t]
 \centering
