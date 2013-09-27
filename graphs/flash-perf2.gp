@@ -19,7 +19,7 @@ set label 1 'Max Write 28.4ms' at 0.7,8
 set label 2 'Max Read 10.33ms' at 0.7,7.3
 set arrow 1 from 0.9,7.6 to 0.92,9.9
 
-plot 'plot-input.dat' \
+plot '../data/plot-input.dat' \
         index 11 title 'write - long' with linespoints lt 1ps 2 lw 4, \
      '' index 10 title ' med.' with linespoints lt 1 ps 2 lw 4, \
      '' index 9 title ' short' with linespoints lt 1 ps 2 lw 4, \

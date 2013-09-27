@@ -19,8 +19,11 @@ done | awk '{print $1, $2, $3, $NF}' | \
     sed -e s/ReadData/0/ -e s/WriteData/1/ |\
     dbcoldefine disk flash iswrite len |\
     dbcolcreate bin | \
-    dbroweval '(_bin = _iswrite ? (_len == 0 ? 0 : _len < 1100 ? 1 : 2) : 
-                                  (_len < 500 ? 0 : _len < 32768 ? 1 : 2))' > all-data.db
+    dbroweval '(_bin = (_len < 100 ? 0 : (_len < 2000 ? 1 : 2)))' > all-data.db
+#                                  (_len < 500 ? 0 : _len < 32768 ? 1 : 2))'
+
+#    dbroweval '(_bin = _iswrite ? (_len < 0 ? 0 : _len < 1100 ? 1 : 2) : 
+#                                  (_len < 500 ? 0 : _len < 32768 ? 1 : 2))' > all-data.db
 #    dbcolcreate -e 0 bin1 -e0 bin2 -e0 bin3 -e0 bin4 |\
 #    dbroweval "(_bin1=_len==$b1?1:0)||(_bin2=_len<$b2?1:0)||\
 #               (_bin3=_len<$b3?1:0)||(_bin4=1)" > all-data.db
