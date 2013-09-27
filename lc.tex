@@ -504,8 +504,15 @@ entries open for reading. Cleaning is done by reading the segment summary,
 identifying the entries within the segment, and then for each entry retrieving
 the entry key and checking whether the index for that key hash still points to
 the entry. If not, the entry has been updated or deleted and no action is
-required; if the index still points to this entry then it is active, and must be
-evicted by removing its pointer from the index.
+required; if the index still points to this entry then it is live.
+
+Two different eviction algorithms were evaluated: strict FIFO and retention of
+recently used entries.  In the FIFO case, all the pointers to live entries are
+removed from the index, thus evicting them from the cache without performing any
+additional I/O.  In the second case, live entries with non-zero use count are
+copied over to the write frontier.  To bound the overhead or \emph{write
+  amplification} due to these additional writes a maximum of one half segment
+worth of data is copied.  Any remaining live entries are evicted.
 
 \begin{figure}
   \begin{center}
