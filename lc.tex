@@ -153,7 +153,7 @@ write throughput for direct I/O (i.e. un-cached) requests to a 16\,MiB file on a
 Nexus 7 tablet running the Android operating system. Write bandwidth
 is less than 1\,MB/s for write sizes under 8\,KiB, and does not reach
 full bandwidth until 4\,MiB. In Figure~\ref{fig:rnd-throughput} we see
-throughput for small random reads and writes; write througput is
+throughput for small random reads and writes; write throughput is
 17\,KB/s for 512-byte writes, rising to 190\,KB/s for 4096-byte
 writes. 
 
@@ -602,10 +602,10 @@ randomness is seen in the case of the original cache, while the log-structured
 cache generates almost completely sequential write operations.
 
 The segment cleaner will skip a segment if it contains an object which is
-currently open for reading, i.e. due to a cache hit. Occurence of these skips
+currently open for reading, i.e. due to a cache hit. Occurrence of these skips
 was monitored in order to determine whether they would have a significant effect
 on cache operation; results are seen in Table~\ref{table:collision}. Out of 256
-segments cleaned in each trace, at most 1 occurence was seen per trace.
+segments cleaned in each trace, at most 1 occurrence was seen per trace.
 
 \begin{figure}[t]
 \centering
