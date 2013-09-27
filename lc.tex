@@ -366,7 +366,7 @@ system\footnote{This is confirmed by \texttt{blktrace} measurements in
 
 \begin{figure}[t]
   \begin{center}
-    \includegraphics[width=\columnwidth]{graphs/storage}
+    \includegraphics[width=0.9\columnwidth]{graphs/storage}
   \end{center}
   \caption{Log-structured cache view of the storage.}
   \label{fig:storage} 
@@ -392,7 +392,7 @@ current cache does.  The segment summary is sized assuming a mean entry size of
 
 \begin{figure}[t]
   \begin{center}
-    \includegraphics[width=\columnwidth]{graphs/segment}
+    \includegraphics[width=0.9\columnwidth]{graphs/segment}
   \end{center}
   \caption{Contents of a Segment.}
   \label{fig:segment} 
@@ -408,6 +408,24 @@ be written back to storage under memory pressure or on browser exit. (If the
 index is corrupted by a power failure, the entire cache can be emptied).  In our
 prototype implementation the in-memory hash structure is not mapped to a file.
 
+\begin{figure}[t]
+  \begin{center}
+    \includegraphics[width=0.9\columnwidth]{graphs/update}
+  \end{center}
+  \caption{Cache index and effect of updating an entry.}
+  \label{fig:update} 
+\end{figure}
+
+\begin{figure}
+  \begin{center}
+    \includegraphics[width=\columnwidth]{graphs/log-size-dist}
+  \end{center}
+  \caption{Log graph of object sizes in collected user traces.}
+  \label{fig:log-size-dist} 
+\vspace{-0.2in}
+\end{figure}
+
+
 \subsubsection{Insert}
 Inserting an entry into the cache backend involves a few steps.  Once the key of
 the entry to be cached is known, the high-level cache calls \emph{CreateEntry}
@@ -420,12 +438,14 @@ well as the segment summary.  Segment summary of the current segment is buffered
 in memory and is not written until the segment is full, resulting in sequential
 fill of the segment.
 
+
 \subsubsection{Open}
 A cache lookup from the upper layer results in a call to \emph{OpenEntry}, which
 attempts to locate an existing entry with a specified key and open it for
 reading.  Given the key, it calculates the hash and uses the index to find the
 location of the entry within the file.  Once found, the header is read and the
 offsets of the streams can be calculated and streams can be read.
+
 
 \subsubsection{Delete}
 If the upper layer determines after creating an entry that it should not
@@ -442,14 +462,6 @@ particular object \emph{must} be removed from cache; in contrast, eviction is
 performed by the cache backend, and selects objects which \emph{may} be removed
 from cache.
 
-\begin{figure}[t]
-  \begin{center}
-    \includegraphics[width=1.04\columnwidth]{graphs/update}
-  \end{center}
-  \caption{Cache index and effect of updating an entry.}
-  \label{fig:update} 
-\vspace{-0.2in}
-\end{figure}
 
 \subsubsection{Update}
 When an entry is updated (\emph{OpenEntry} $\rightarrow$ \emph{WriteData}, ..,
@@ -469,24 +481,6 @@ implementation gained very little in space savings at the cost of significant
 complexity. In addition the loss of spatial locality led to a decrease in read
 performance.
 
-\subsubsection{Segment Life Cycle}
-A segment starts in the \emph{free} state, goes to the \emph{current} state when
-it is chosen as the write frontier, and eventually is filled and reaches the
-\emph{closed} state.  A \emph{closed} segment is read-only until it is freed for
-reuse.  Once the number of \emph{free} segments drops below a low watermark, a
-cleaning process starts and frees segments until their number reach a high
-watermark.
-
-\begin{figure}[t]
-  \begin{center}
-    \includegraphics[width=1.04\columnwidth]{graphs/log-size-dist}
-  \end{center}
-  \caption{Log graph of object sizes in collected user traces.}
-  \label{fig:log-size-dist} 
-\vspace{-0.2in}
-\end{figure}
-
-
 \begin{figure}
   \begin{center}
     \includegraphics[width=\columnwidth]{graphs/trace}
@@ -496,6 +490,14 @@ watermark.
 \vspace{-0.2in}
 \end{figure}
 
+\subsubsection{Segment Life Cycle}
+A segment starts in the \emph{free} state, goes to the \emph{current} state when
+it is chosen as the write frontier, and eventually is filled and reaches the
+\emph{closed} state.  A \emph{closed} segment is read-only until it is freed for
+reuse.  Once the number of \emph{free} segments drops below a low watermark, a
+cleaning process starts and frees segments until their number reach a high
+watermark.
+
 \subsubsection{Cleaning a Segment}
 Segments are chosen for cleaning in FIFO order, skipping any segments with
 entries open for reading. Cleaning is done by reading the segment summary,
@@ -504,23 +506,6 @@ the entry key and checking whether the index for that key hash still points to
 the entry. If not, the entry has been updated or deleted and no action is
 required; if the index still points to this entry then it is active, and must be
 evicted by removing its pointer from the index.
-
-\section{Evaluation}
-
-We implemented the log-structured cache for Chromium on Nexus 7, running Android
-Jelly Bean 4.2.2 based on 3.4.x Linux kernel with ext4 file system.  In order to
-evaluate it, we collected logs from a group of users who used an instrumented
-version of the stock Chromium browser for two months as their main browser.  The
-instrumentation logged arguments to the cache API in full detail, with URLs
-hashed with random salts.  A short sample from a trace appears in
-Figure~\ref{fig:trace}.
-
-We note that these traces were collected on desktop and laptop systems (due to
-Chromium not being completely open source on Android), and thus will differ from
-mobile browser traces. In particular we expect the mean number of objects per
-page to be fewer and the sizes of objects to be smaller.
-
-\subsection{Storage Performance}
 
 \begin{figure}
   \begin{center}
@@ -541,6 +526,24 @@ page to be fewer and the sizes of objects to be smaller.
   \label{fig:flash-perf} 
 \vspace{-0.2in}
 \end{figure}
+
+
+\section{Evaluation}
+
+We implemented the log-structured cache for Chromium on Nexus 7, running Android
+Jelly Bean 4.2.2 based on 3.4.x Linux kernel with ext4 file system.  In order to
+evaluate it, we collected logs from a group of users who used an instrumented
+version of the stock Chromium browser for two months as their main browser.  The
+instrumentation logged arguments to the cache API in full detail, with URLs
+hashed with random salts.  A short sample from a trace appears in
+Figure~\ref{fig:trace}.
+
+We note that these traces were collected on desktop and laptop systems (due to
+Chromium not being completely open source on Android), and thus will differ from
+mobile browser traces. In particular we expect the mean number of objects per
+page to be fewer and the sizes of objects to be smaller.
+
+\subsection{Storage Performance}
 
 A test driver was used to replay and measure the latency of the operations. To
 help ensure accurate reproduction of the application behavior it was
@@ -619,7 +622,7 @@ increase of 3\% in the miss rate, from 65\% to 68\%.
 
 \begin{figure}[t]
   \begin{center}
-    \includegraphics[width=1.04\columnwidth]{graphs/hit-rate-2}
+    \includegraphics[width=0.9\columnwidth]{graphs/hit-rate-2}
   \end{center}
   \caption{Hit rate for the \emph{log-structured cache} with FIFO eviction
     policy.}
@@ -629,7 +632,7 @@ increase of 3\% in the miss rate, from 65\% to 68\%.
 
 \begin{figure}
 \centering
-\includegraphics[width=1.05\columnwidth]{graphs/hit-rate-3}
+\includegraphics[width=0.9\columnwidth]{graphs/hit-rate-3}
 \caption{Hit rate for the \emph{log-structured cache} with retention
   of recently-used objects during cleaning.}
 \label{fig:hit-rate2}
