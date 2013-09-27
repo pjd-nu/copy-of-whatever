@@ -289,6 +289,9 @@ lower than for the original cache algorithm.)
 Our log-structured cache was implemented and evaluated in Chromium, the
 open-source browser from Google.  This decision placed certain constraints on
 our design, due to the cache API and overall architecture of Chromium.
+In this section we first describe the relevant aspects of the Chromium
+caching architecture, and then the structures and operation of the
+log-structured cache.
 
 \subsection{Chromium's cache architecture}
 
@@ -313,8 +316,7 @@ internal API in Chromium is asynchronous, through the use of callback functions
 as shown in Figure~\ref{cache-api}.  Function calls return immediately and the
 return value determines whether the operation has completed; if not, a task is
 posted to a dedicated \emph{cache thread} and a callback invoked at some time in
-the future to indicate a completed task.  The log-structured cache described
-below implements this API, replacing the current Chromium cache.
+the future to indicate a completed task.  
 
 \begin{figure}[h]
 {\small
@@ -349,13 +351,14 @@ void Close() = 0;  // Release a reference to entry.
 \subsection{The new backend}
 
 The log-structured cache implementation stores data in a single large file,
-which as shown in Figure~\ref{fig:storage} is divided into segments of large
-fixed size.  The segment size is chosen to be much larger than the average cache
+which as shown in Figure~\ref{fig:storage} is divided into large
+fixed-size segments.  The segment size is chosen to be much larger than the average cache
 entry, and to be larger than the cleaning unit of the flash device (typically
 4\,MiB for eMMC devices we have seen).  Since the cache operates above the file
 system it is not possible to align segments with underlying storage boundaries;
-however by creating the cache file at once it is typically possible to obtain
-sequential block allocation.
+however it is typically allocated sequentially by the file
+system\footnote{This is confirmed by \texttt{blktrace} measurements in
+  Figure \ref{fig:blktrace:flash}, below.}.
 
 \begin{figure}[t]
   \begin{center}
@@ -536,16 +539,19 @@ page to be fewer and the sizes of objects to be smaller.
 \end{figure}
 
 A test driver was used to replay and measure the latency of the operations. To
-help ensure accurate reproduction of the application behavior, we preserved
-inter-operation delays from the trace (truncated to a maximum of 5 seconds),
-with the exception of inter-session delays.  When traces were played back
-without inter-operation delays, substantial differences in performance were
-observed, due to additional aggregation of operations at the file system layer.
+help ensure accurate reproduction of the application behavior it was
+necessary to preserve inter-operation delays; when traces were
+replayed at maximum speed, significant performance differences were
+seen due to buffering and coalescing of operations at the file system
+layer which did not occur in typical use. To reduce run-time these
+delays were truncated to a maximum of 5 seconds, preserving most timing
+within an individual browsing session while allowing weeks-long traces
+to be replayed in less than a day.
 
 Figure~\ref{fig:disk-perf} shows the CDF for \emph{ReadData} and
 \emph{WriteData} operation latencies for the existing Chromium cache.  It can be
 seen that the $95^{th}$ percentile \emph{ReadData} and \emph{WriteData} latency
-is nearly 10ms, with a worst-case read latency of over 3 seconds.
+is nearly 10ms, with a worst-case write latency of over 3 seconds.
 
 Figure~\ref{fig:flash-perf} shows the corresponding data for the
 \emph{log-structured cache}.  As can be seen, the $95^{th}$ percentile
