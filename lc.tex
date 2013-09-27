@@ -1,8 +1,5 @@
 \documentclass[letterpaper,twocolumn,10pt]{article}
 \usepackage{usenix,epsfig,url}
-\usepackage{graphicx}
-\usepackage{multirow}
-\usepackage{rotating}
 \usepackage[font={small,it}]{caption}
 \usepackage{url} 
 \urlstyle{sf}
@@ -621,6 +618,24 @@ increase of 3\% in the miss rate, from 65\% to 68\%.
   of recently-used objects during cleaning.}
 \label{fig:hit-rate2}
 \end{figure}
+
+\vspace{30 mm}
+
+\begin{table}[h]
+{\footnotesize
+\begin{tabular}{llrrrr}
+\cline{2-6}
+ &  & \multicolumn{4}{c}{Cache Size}                                                                                     \\ \cline{2-6} 
+ &        & \multicolumn{1}{l}{1024 MB} & \multicolumn{1}{l}{512 MB} & \multicolumn{1}{l}{256 MB} & \multicolumn{1}{l}{128 MB} \\
+ & Trace 1      & 1.05                        & 1.17                       & 1.47                       & 1.75                      \\
+ & Trace 2      & 1.11                        & 1.36                       & 1.68                       & 1.91                      \\
+ & Trace 3      & 1.02                        & 1.08                       & 1.20                       & 1.40                      \\ \cline{2-6} 
+\end{tabular}
+}
+\label{table:write-amplification}
+\caption{Write amplification due to segment cleaning.}
+\label{tab:skips}
+\end{table}
 
 \subsection{Quantifying the Impact}
 The reduction in per-operation overhead due to the log-structured cache will
