@@ -396,13 +396,14 @@ current cache does.  The segment summary is sized assuming a mean entry size of
 
 \subsubsection{The Index}
 In addition to storing entries, we also store the cache index, which maps the
-hash of the key (for the HTTP cache, the URL) to the corresponding entry's
-location in the file, as shown in Figure~\ref{fig:update}.  The index is very
-small in comparison to the cache storage, and is updated on every new entry
-insertion.  It is thus kept in memory as a memory-mapped file, which would only
-be written back to storage under memory pressure or on browser exit. (If the
-index is corrupted by a power failure, the entire cache can be emptied).  In our
-prototype implementation the in-memory hash structure is not mapped to a file.
+hash of the key (for the HTTP cache, the URL) to a tuple consisting of the
+corresponding entry's location in the file and its use count as shown in
+Figure~\ref{fig:update}.  The index is very small in comparison to the cache
+storage, and is updated on every new entry insertion and successful lookup.  It
+is thus kept in memory as a memory-mapped file, which would only be written back
+to storage under memory pressure or on browser exit. (If the index is corrupted
+by a power failure, the entire cache can be emptied).  In our prototype
+implementation the in-memory hash structure is not mapped to a file.
 
 \subsubsection{Insert}
 Inserting an entry into the cache backend involves a few steps.  Once the key of
@@ -420,18 +421,20 @@ fill of the segment.
 A cache lookup from the upper layer results in a call to \emph{OpenEntry}, which
 attempts to locate an existing entry with a specified key and open it for
 reading.  Given the key, it calculates the hash and uses the index to find the
-location of the entry within the file.  Once found, the header is read and the
-offsets of the streams can be calculated and streams can be read.
+location of the entry within the file.  Once found, the header is read, the use
+count is updated and the offsets of the streams can be calculated and streams
+can be read.
 
 \subsubsection{Delete}
 If the upper layer determines after creating an entry that it should not
 actually be cached, it may mark it for deletion by calling \emph{Doom}.  When
 \emph{Close} is called, the in-memory entry is destroyed rather than being
-written to storage.  To delete a previously inserted entry, it must be opened
-(\emph{OpenEntry}), and then may be marked for deletion (\emph{Doom}), and
-closed (\emph{Close}).  In this case the index is updated, and the space
-occupied by the entry will become usable when the segment is cleaned.
+written to storage.
 
+To delete a previously inserted entry, it must be opened (\emph{OpenEntry}), and
+then may be marked for deletion (\emph{Doom}), and closed (\emph{Close}).  In
+this case the index is updated, and the space occupied by the entry will become
+usable when the segment is cleaned.
 
 Note that deleting an entry is performed by the upper layer, and is used when a
 particular object \emph{must} be removed from cache; in contrast, eviction is
@@ -457,7 +460,7 @@ was originally written to \emph{segment 0} is re-opened for an update.  Once the
 update is complete, the new version is written to the current write frontier,
 \emph{segment n-1}.  It is possible that only part of the entry (e.g. one
 stream) was modified; in this case, the remainder of the information is copied
-from the old entry.
+from the old entry.  Updating an entry also increases its use count.
 
 An alternative to copying unmodified streams is to store back pointers to the
 original stream in the updated entry. This strategy was evaluated; the resulting
