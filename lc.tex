@@ -25,25 +25,28 @@ performance. However, if the performance of the underlying cache storage
 (i.e. the file system) varies with differing workloads, then these other factors
 may in fact not be equal when comparing different cache strategies.
 
-Mobile systems such as smart phones are typically equipped with low-speed flash
+Mobile systems such as smart phones are typically equipped with low-performance flash
 storage, and suffer severe degradation in file system performance under
 sufficiently random write workloads. A cache implementation which performs
 random writes will thus spend more time reading and writing its cache, possibly
 resulting in lower overall system performance than a lower-hit-rate
-implementation which achieves higher storage performance.
+implementation with higher storage performance.
 
 We present a log-structured browser cache, generating almost purely sequential
-writes, and in which cleaning is efficiently performed by cache eviction. An
-implementation of this cache for the Chromium browser on Android was developed;
-using captured user browsing traces we test the log-structured cache and compare
+writes, in which cleaning is efficiently coupled with cache
+eviction. We evaluate an
+implementation of this cache for the Chromium browser on Android, using
+captured user browsing traces, comparing 
 its performance to the existing Chromium implementation.
 
 We achieve a ten-fold performance improvement in basic cache operations (as
-measured on a Nexus 7 (2012 version) tablet), while in the worst case
-increasing miss rate by less than 3\% (from 65\% to 68\%). For network
-bandwidths of 1\,Mb/s or higher the increased cache performance more than makes
-up for the decrease in hit rate; the effect is more pronounced when examining
-$95^{th}$ percentile delays.
+measured on a Nexus 7 (2012 version) tablet), while in the worst measured case
+increasing miss rate by less than 1\% (from 62.1\% to 63.1\%) and more
+typically by less than 0.5\%. For network
+bandwidths of 350\,Kb or higher the increased cache performance will
+more than make up for the decrease in hit rate; the effect is more
+pronounced with smaller object sizes which may be typical of mobile
+browser usage.
 
 \section{Introduction}
 
