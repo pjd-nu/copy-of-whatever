@@ -504,7 +504,8 @@ page to be fewer and the sizes of objects to be smaller.
   \begin{center}
     \includegraphics[width=1.04\columnwidth]{graphs/disk-perf}
   \end{center}
-  \caption{ReadData and WriteData latency percentiles for the existing cache.}
+  \caption{ReadData and WriteData latency percentiles for the existing
+    cache. Overall mean read = 3.05\,ms, write = 3.59\,ms.}
   \label{fig:disk-perf} 
 \vspace{-0.2in}
 \end{figure}
@@ -514,7 +515,7 @@ page to be fewer and the sizes of objects to be smaller.
     \includegraphics[width=1.04\columnwidth]{graphs/flash-perf}
   \end{center}
   \caption{ReadData and WriteData latency percentiles for the log-structured
-    cache.}
+    cache. Overall mean read = 0.148\,ms, write = 0.146\,ms.}
   \label{fig:flash-perf} 
 \vspace{-0.2in}
 \end{figure}
@@ -560,7 +561,7 @@ is open for & reading
 
 \begin{figure}
 \centering
-\includegraphics[width=0.8\columnwidth]{graphs/flash.png}
+\includegraphics[width=0.717\columnwidth]{graphs/flash.png}
 \caption{Block device access trace, log-structured cache}
 \label{fig:blktrace:flash}
 \end{figure}
@@ -608,31 +609,41 @@ increase of 3\% in the miss rate, from 65\% to 68\%.
 \end{figure}
 
 \subsection{Quantifying the Impact}
-To compare the loss in hit rate to the improvement in storage performance, we
-calculate the mean per-operation performance
+The reduction in per-operation overhead due to the log-structured cache will
+result in a  performance improvement, while the decrease in hit rate will have
+the opposite effect. We can quantify the effect of these two factors by noting
+that the mean per-operation performance can be expressed as
 \begin{equation}
 T_{op} = T_{read}\cdot R_{hit} + T_{fetch}\cdot (1-R_{hit})
 \end{equation}
-where $T_{read}$ is the cache read operation latency and $T_{fetch}$ is the time
-to retrieve an object---$\frac{8\cdot S_{obj}}{R}$ where $R$ is the network
-speed in bits per second and $S_{obj}$ is the mean object size in bytes.
-Assuming a mean object size of 4000 bytes, at a network speed of 0.94\,Mbit/s
-$T_{op}$ will be 23.16ms for both caches; for higher speeds the log-structured
-cache will outperform the existing cache.
+where $T_{read}$ is the cache read operation latency, $R_{hit}$ is the hit rate,
+and $T_{fetch}$ is the time to retrieve an object. For the original cache 
+$T_{read}=3.05$ms, and we assume $R_{hit}=0.40$. Fetch time is $\frac{8\cdot S_{obj}}{R}$
+where $R$ is the network speed in bits per second and $S_{obj}$ is the mean
+object size in bytes.
 
-We can approximate the $95^{th}$ percentile latency by ignoring object size
-variance and applying the same formula, giving a lower bound. Here we find that
-at a network rate of 0.33\,Mbit/s both caches will have a 95-percentile
-per-operation latency of 65.8\,ms; for higher network speeds the log-structured
-cache will be better.
+For the log-structured cache, 
+\begin{equation}
+T_{op} = T_{read}'\cdot (R_{hit}-\Delta + T_{fetch}\cdot (1-R_{hit}+\Delta)
+\end{equation}
+where $T_{read}'=0.15$ms and we assume the reduction in hit rate, $\Delta$, is $0.5\%$. 
+Assuming a mean object size of 10,000 bytes\footnote{Calculated from the
+  measured traces} we find that at a network speed of
+345\,Kbit/s the mean operation time will be equal for both caches; for
+higher-speed connections (or smaller mean object sizes) the log-structured cache
+will be faster. 
+In other words, for modern wireless speeds the faster read performance
+of the log-structured cache will far outweigh a small decrease in hit rate. 
 
-Since 1\,Mbit/s is at the low end of reported 3G performance, and smart phone
-WiFi performance is in the 8-9\,Mbit/s range~\cite{kim12}, the loss of hit rate
-for the log-structured cache seems to be more than made up for by increased
-performance. We note that this analysis omits the overhead of asynchronous
-writes performed in the background; however although difficult to quantify they
-have a significant impact as well, by using storage bandwidth and CPU needed by
-the critical-path portions of the application.
+We note that our assumed mean object size is determined from desktop
+and laptop browsing measurements. It is likely that the mean object size will be
+smaller on mobile devices, e.g. due to the inclusion of some fraction
+of mobile-optimized sites; the resulting reduction in object fetch time will
+further diminish the effect of a small hit rate reduction.
+In addition, our analysis omits any consideration of writes, as they may
+be performed in the background; however they have a significant (although
+difficult to quantify) impact due to consumption of storage bandwidth and CPU
+time needed by the critical-path portions of the application.
 
 \section{Related Work}
 A large body of work has examined the problem of caching web accesses at a proxy
