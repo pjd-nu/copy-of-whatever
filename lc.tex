@@ -39,10 +39,11 @@ using captured user browsing traces we test the log-structured cache and compare
 its performance to the existing Chromium implementation.
 
 We achieve a ten-fold performance improvement in basic cache operations (as
-measured on a Nexus 7 tablet), while in the worst case increasing miss rate by
-less than 3\% (from 65\% to 68\%). For network bandwidths of 1\,Mb/s or higher
-the increased cache performance more than makes up for the decrease in hit rate;
-the effect is more pronounced when examining $95^{th}$ percentile delays.
+measured on a Nexus 7 (2012 version) tablet), while in the worst case
+increasing miss rate by less than 3\% (from 65\% to 68\%). For network
+bandwidths of 1\,Mb/s or higher the increased cache performance more than makes
+up for the decrease in hit rate; the effect is more pronounced when examining
+$95^{th}$ percentile delays.
 
 \section{Introduction}
 
@@ -145,7 +146,7 @@ than 10\,KiB of RAM.
 
 \subsection{Mobile storage performance}
 
-As an example, in Figure~\ref{fig:galaxy-nexus-seq} we see sequential read and
+As an example, in Figure~\ref{fig:seq-throughput} we see sequential read and
 write throughput for direct I/O (i.e. un-cached) requests to a 16\,MiB file on a
 Galaxy Nexus phone running the Android operating system. Full write bandwidth is
 not achieved for the write sizes less than 1\,MiB and performance falls off
@@ -153,10 +154,10 @@ drastically for write sizes less than 64\,KiB.
 
 \begin{figure}[t]
   \begin{center}
-    \includegraphics[width=1.04\columnwidth]{graphs/galaxy-nexus-seq}
+    \includegraphics[width=1.04\columnwidth]{graphs/seq-throughput}
   \end{center}
-  \caption{Sequential I/O throughput of the eMMC found on Galaxy Nexus.}
-  \label{fig:galaxy-nexus-seq} 
+  \caption{Sequential I/O throughput of the eMMC found on Nexus 7.}
+  \label{fig:seq-throughput}
 \end{figure}
 
 This performance for sequential I/O is comparable to what was observed in the
