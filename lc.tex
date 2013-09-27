@@ -562,17 +562,19 @@ delays were truncated to a maximum of 5 seconds, preserving most timing
 within an individual browsing session while allowing weeks-long traces
 to be replayed in less than a day.
 
-Figure~\ref{fig:disk-perf} shows the CDF for \emph{ReadData} and
-\emph{WriteData} operation latencies for the existing Chromium cache.  It can be
-seen that the $95^{th}$ percentile \emph{ReadData} and \emph{WriteData} latency
-is nearly 10ms, with a worst-case write latency of over 3 seconds.
+Operation latencies for  \emph{ReadData} and \emph{WriteData} with the
+existing Chromium cache are shown in Figure~\ref{fig:disk-perf}. CDFs
+are given for small (less than 100 bytes), medium (up to 2000 bytes) and
+large operations; it can be seen that the $95^{th}$ percentile
+\emph{ReadData} and \emph{WriteData} latency is nearly 10ms, with a
+worst-case write latency of over 3 seconds. 
 
 Figure~\ref{fig:flash-perf} shows the corresponding data for the
 \emph{log-structured cache}.  As can be seen, the $95^{th}$ percentile
 \emph{ReadData} and \emph{WriteData} latencies are less than a millisecond, with
 a worst case of 28 and 10ms.
 
-\begin{table}[h]
+\begin{table}[t]
 {\footnotesize
 \begin{tabular}{llrrrr}
 \cline{2-6}
@@ -583,11 +585,26 @@ a worst case of 28 and 10ms.
  & Trace 3      & 0                           & 1                          & 0                          & 1                          \\ \cline{2-6} 
 \end{tabular}
 }
-\label{table:collision}
 \caption{Cleaning / object read collisions. A segment is skipped by the cleaner
-  when an object in that segment is currently open for reading.}
-\label{tab:skips}
+  when an object in that segment is currently open for reading. All traces
+  were  256 segments long.}
+\label{table:collision}
 \end{table}
+
+The Linux block-level I/O tracing mechanism~\cite{axboe_blktrace} was enabled in
+the Android kernel and the \texttt{blktrace} utility was used to record logical
+block addresses of actual writes to flash (i.e. after buffering and merging
+performed by the I/O scheduler) during operation of the original and
+log-structured caches. In Figure~\ref{fig:blktrace:disk} and
+\ref{fig:blktrace:flash} we see representative traces for each; a high degree of
+randomness is seen in the case of the original cache, while the log-structured
+cache generates almost completely sequential write operations.
+
+The segment cleaner will skip a segment if it contains an object which is
+currently open for reading, i.e. due to a cache hit. Occurence of these skips
+was monitored in order to determine whether they would have a significant effect
+on cache operation; results are seen in Table~\ref{table:collision}. Out of 256
+segments cleaned in each trace, at most 1 occurence was seen per trace.
 
 \begin{figure}[t]
 \centering
@@ -658,9 +675,8 @@ increase of 3\% in the miss rate, from 65\% to 68\%.
  & Trace 3      & 1.02                        & 1.08                       & 1.20                       & 1.40                      \\ \cline{2-6} 
 \end{tabular}
 }
-\label{table:write-amplification}
 \caption{Write amplification due to segment cleaning.}
-\label{tab:skips}
+\label{table:write-amplification}
 \end{table}
 
 \subsection{Quantifying the Impact}
