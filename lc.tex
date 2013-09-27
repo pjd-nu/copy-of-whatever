@@ -187,9 +187,10 @@ with modern flash chips may suffer 128$\times$ or worse decrease in throughput f
 random writes~\cite{boboila_performance_2011}.
 
 \subsection{Log-structured cache}
-As can be seen in the Figure~\ref{fig:galaxy-nexus-seq}, read performance on
-these devices is fairly high --- even for reads as small as 4KB --- while large
-sequential writes must be used to achieve high write performance.
+As can be seen in the Figures~\ref{fig:seq-throughput} and
+\ref{fig:rnd-throughput}, read performance on these devices is
+significantly higher than write performance, and sequential writes are
+needed for high performance.
 The combination of these storage characteristics and the write-heavy load
 offered by a low hit-rate cache suggests the use of a log-structured,
 write-optimized approach to cache storage similar to Rosenblum and Ousterhout's
