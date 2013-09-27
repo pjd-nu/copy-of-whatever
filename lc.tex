@@ -6,8 +6,7 @@
 
 \begin{document}
 
-\title{\Large \bf Log-Structured Cache: Trading Hit-Rate for Storage Performance
-  (and winning) in Mobile Devices}
+\title{\Large \bf A Case for Log-Structured Cache in Mobile Devices}
 
 % \author{
 %   {\rm Abutalib Aghayev, Peter Desnoyers}\\
@@ -543,7 +542,7 @@ evaluate it, we collected logs from a group of users who used an instrumented
 version of the stock Chromium browser for two months as their main browser.  The
 instrumentation logged arguments to the cache API in full detail, with URLs
 hashed with random salts.  A short sample from a trace appears in
-Figure~\ref{fig:trace}.
+Figure~\ref{fig:trace}. 
 
 We note that these traces were collected on desktop and laptop systems (due to
 Chromium not being completely open source on Android), and thus will differ from
@@ -552,7 +551,9 @@ page to be fewer and the sizes of objects to be smaller.
 
 \subsection{Storage Performance}
 
-A test driver was used to replay and measure the latency of the operations. To
+A test driver was used to replay and measure the latency of the operations. 
+Due to size limitations in the Chromium cache, traces were trimmed to a total of
+2\,GiB of writes. To
 help ensure accurate reproduction of the application behavior it was
 necessary to preserve inter-operation delays; when traces were
 replayed at maximum speed, significant performance differences were
@@ -624,25 +625,25 @@ segments cleaned in each trace, at most 1 occurence was seen per trace.
 
 Hit rate was evaluated on the same traces used for testing storage
 performance. First an upper bound on hit rate was established for each trace, by
-simulating the operation of an \emph{infinite cache}.  That is, we instantiate a
-cache large enough that would never evict an entry and then replay the trace on
-it.  Since the traces were collected on a cache with bounded capacity, they
-contain many failing \emph{OpenEntry} calls due to evictions, followed by an
-immediate \emph{CreateEntry} call to insert the entry.  We fix these by
-preprocessing traces and replacing such \emph{OpenEntry}-\emph{CreateEntry}
-pairs with succeeding \emph{OpenEntry} calls, thus giving an impression of a
-trace from an infinite cache.  With the \emph{infinite cache}, we never have a
-failing \emph{OpenEntry} call with the exception of compulsory misses, giving an
-upper bound on the hit rate.  For the collected traces this upper bound ranges
-from 34\% to 45\%, which is consistent with previous studies~\cite{souders12}.
+simulating the operation of an \emph{infinite cache}. 
+This gives an upper bound on the hit rate of any cache; for the collected traces
+this ranges from 34\% to 45\%, which is consistent with previous
+studies~\cite{souders12}. 
 
-Due to maximum size limitation of 2\,GiB on the current Chromium cache, traces
-were trimmed to ensure they did not exceed this size before further experiments
-were performed.  In Figure~\ref{fig:hit-rate} we see the hit rate results for
-the infinite cache case as well as the cache sizes ranging from 1\,GiB to
-64\,MiB for both the original and the log-structured cache.
-The impact on the hit rate is seen to be modest; in the worst case there is an
-increase of 3\% in the miss rate, from 65\% to 68\%.
+ In Figure~\ref{fig:hit-rate} we see the hit rate results for
+the infinite cache as well as cache sizes ranging from 1\,GiB to
+128\,MiB, for both the original and the log-structured cache with FIFO
+eviction. In the worst case the hit rate decreases by 3\%, from 35\% to 32\%.
+
+In Figure~\ref{fig:hit-rate2} we see results for the log-structured cache with
+per-segment LRU cleaning; in this case performance is within 0.5\% or less of
+the original cache in almost all cases, with a maximum decrease of 1\%. The
+additional write amplification due to copying of live entries is shown in
+Table~\ref{table:write-amplification}; in most cases it is quite low, although
+in the worst case it nears the 2$\times$ bound enforced by the cleaning
+algorithm. (We note that the write amplification internal to the flash device
+incurred due to random writes from the original cache would be expected to be
+much higher than these values.)
 
 \begin{figure}[t]
   \begin{center}
@@ -678,6 +679,7 @@ increase of 3\% in the miss rate, from 65\% to 68\%.
 \caption{Write amplification due to segment cleaning.}
 \label{table:write-amplification}
 \end{table}
+
 
 \subsection{Quantifying the Impact}
 The reduction in per-operation overhead due to the log-structured cache will
@@ -760,10 +762,9 @@ counting hits and misses, ignoring the question of how fast the
 resulting system runs. In contrast our cache for the Chromium browser
 is designed to maximize the performance of the hit and miss operations
 themselves, speeding them up by almost an order of magnitude, at the
-cost of a modest reduction in hit rate. Further work will focus on
-quantifying the actual impact on user-visible performance, as well as
-investigating whether hit rate may be improved without significantly
-impacting storage performance.
+cost of a modest reduction in hit rate. As a fully open-source version of a
+Chromium browser for Android has recently become available, further work will
+focus on quantifying the actual impact on user-visible performance.
 
 \section*{Acknowledgments}
 
