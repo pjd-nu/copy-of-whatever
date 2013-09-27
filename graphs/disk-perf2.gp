@@ -15,11 +15,11 @@ set key at 0.8,9.5 Right maxrows 3 width -5 samplen 3
 set xrange [0.38:1.06]
 set yrange [0:10]
 
-set label 1 'Max Write 470ms' at 1.03,2 right
-set label 2 'Max Read 3351ms' at 1.03,1.5 right
+set label 1 'Max Write 3351ms' at 1.03,2 right
+set label 2 'Max Read 470ms' at 1.03,1.5 right
 set arrow 1 from 0.98,2.3 to 0.98,9.9
 
-plot 'plot-input.dat' \
+plot '../data/plot-input.dat' \
         index 5 title 'write - long' with linespoints lt 1 lw 4 ps 2, \
      '' index 4 title '- med.' with linespoints lt 1 lw 4 ps 2, \
      '' index 3 title '- short' with linespoints lt 1 lw 4 ps 2, \
